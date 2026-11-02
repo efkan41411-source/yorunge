@@ -1,20 +1,22 @@
-# Paketçi — Son Teslimat
+# Yörünge — Şehrin Paketçisi
 
-Unity 6 ile hazırlanmış, dikey ekrana yönelik, mahalle temalı bir paket eşleştirme oyunu.
+Unity `6000.6.7f1` ile hazırlanmış, dikey ekranlı mahalle temalı oyun prototipi. Ana menüden iki ayrı oynanış tarzı seçilebilir: üç şeritli kurye aksiyonu veya ilk prototipteki paket eşleştirme bulmacası. Her iki tarzda da Mahalle, Ekspres ve Günlük modları bulunur.
 
 ## Çalıştırma
 
 Projeyi Unity Hub ile açıp `Assets/Scenes/SampleScene.unity` sahnesini Play modunda çalıştırın. Oyun başlangıçta kendi arayüzünü ve seviyesini oluşturur; sahneye ayrıca nesne eklemek gerekmez.
 
-## Oyun modları ve kontroller
+## Oynanış tarzları ve modlar
 
-- **Hikâye:** Süre sınırı olmadan bölümleri tamamlayın. Yeni renkler ve joker paket 3, 4, 8 ve 13. bölümlerde açılır.
-- **Ekspres:** 75 saniyede olabildiğince çok sipariş teslim edin. Her üçlü sipariş dalgasından sonra yeni bir rota açılır. Doğru teslimat süre ekler, yanlış eşleşme süre götürür ve rekor kaydedilir.
-- **Günlük:** Her gün açılan üç sabit rota: 90, 75 ve 60 saniye; renk sayısı ve tuzak paketleri artar. Her rotanın ödülü günde bir kez alınır. Rotaları istediğiniz zaman oynayabilirsiniz.
-- Sipariş kartındaki renkleri eşleştiren üç paketi seçin. Joker paket herhangi bir rengi tamamlar.
-- **GERİ AL** son seçimi çıkarır. İlk ipucu ücretsiz, sonraki ipuçları 5 jetondur.
+- **Kurye Aksiyonu:** Kuryeyi üç şerit arasında yönlendirip hedefe yaklaşırken doğru zamanda paket fırlatın.
+- **Paket Eşleştirme:** İlk sürümdeki sipariş kartı, renkli paketler, ayırma tepsisi, jokerler ve ipuçlarıyla siparişleri tamamlayın.
+- **Mahalle:** Kurye tarzında süre içinde teslimat hedefine ulaşın; eşleştirme tarzında bölüm siparişlerini tamamlayın.
+- **Ekspres:** Kurye tarzında isabetli atışlarla süre kazanıp teslimat rekoru kırın; eşleştirme tarzında 75 saniyelik sipariş serisini oynayın.
+- **Günlük:** Her iki tarzda da üç günlük rota/bulmaca oynanabilir. Kurye akşam rotasında zamanlama aralığı daha dardır; günlük ödül cihazda bir kez alınır.
+- Kurye kontrolleri: **SOL / ORTA / SAĞ** düğmeleriyle şerit değiştirin; hedef yeşil zamanlama aralığına girdiğinde **PAKETİ FIRLAT!** düğmesine basın. Yanlış şerit veya zamanlama 4 saniye kaybettirir.
+- Klavyede kurye için **A / Sol Ok**, **D / Sağ Ok** ile şerit değiştirin; **Space** ile atış yapın. Paket eşleştirme tarzında renkleri eşleştiren üç paketi tepsiye seçin; **GERİ AL** ve **İPUCU** düğmelerini kullanın.
 - Ana ekrandan bölüm haritasını ve **AYARLAR**'ı açın. Oyun sırasında **Ⅱ** ile duraklatın; buradan ayarlara, yeniden başlatmaya veya ana menüye geçin.
 - Ayarlardan ses efektlerini, ses düzeyini ve titreşimi değiştirebilirsiniz. Klavyede Escape ile duraklatıp devam edebilirsiniz.
-- Süreli rota biterse isterseniz, reklam tamamen izlenince bir kez 30 saniye ek süre alabilirsiniz. Reklam uygun değilse bölümü ücretsiz yeniden deneyebilirsiniz.
+- Süre biterse isterseniz, reklam tamamen izlenince bir kez 30 saniye ek süre alabilirsiniz. Reklam uygun değilse bölümü ücretsiz yeniden deneyebilirsiniz.
 
-Bölüm ilerlemesi, günlük rotalar, rekorlar, jetonlar, yıldızlar ve tercihler cihazda yerel olarak saklanır. Google Mobile Ads SDK test reklam birimleriyle yapılandırılmıştır; gerçek reklam geliri sağlamaz. Yayın öncesinde kendi AdMob uygulama/reklam birimi kimliklerinizi girin ve AdMob'da gizlilik/izin mesajlarını yapılandırıp test edin.
+Bölüm ilerlemesi, günlük ödüller, her oynanış tarzının Ekspres rekoru, jetonlar, yıldızlar ve seçili oynanış tarzı cihazda yerel olarak saklanır. Görsel ve oynanış şu anda kodla çizilmiş ilk prototiptir; gerçek 3D karakter/şehir assetleri ve fizik tabanlı paket fırlatma sonraki geliştirme aşamalarıdır. Google Mobile Ads SDK test reklam birimleriyle yapılandırılmıştır; gerçek reklam geliri sağlamaz. Yayın öncesinde kendi AdMob uygulama/reklam birimi kimliklerinizi girin ve AdMob'da gizlilik/izin mesajlarını yapılandırıp test edin.

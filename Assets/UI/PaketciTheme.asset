@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06ffa9235a178034a9fa074db7070d41, type: 3}
+  m_Name: PaketciTheme
+  m_EditorClassIdentifier: Assembly-CSharp::PaketciTheme
+  panel: {fileID: 21300000, guid: 68d25aebf23eeba4f80d160256946c7b, type: 3}
+  icons:
+  - {fileID: 21300000, guid: 8e1569078270f5f4896328c14647a213, type: 3}
+  - {fileID: 21300000, guid: 30b21388c50a180488f9ca8105515bdb, type: 3}
+  - {fileID: 21300000, guid: 454d33818bb3bec4c9997d20a81722a0, type: 3}
+  - {fileID: 21300000, guid: ff200763aaa00334ebf57709824052ea, type: 3}
+  - {fileID: 21300000, guid: 8b14d04b0fcda0543addfb362f8dfbd7, type: 3}
+  - {fileID: 21300000, guid: dd2b1011c480b14478c9b332f2e32b38, type: 3}
+  - {fileID: 21300000, guid: a5da22312f8736748a9bce975c3e7604, type: 3}
+  - {fileID: 21300000, guid: 2695e71c818b7e449a193dedbe5dcec0, type: 3}
+  - {fileID: 21300000, guid: d5d358cbab05d0e4c8d6ec55d88b7cb6, type: 3}
+  - {fileID: 21300000, guid: ac45e50aa1ef2c149bc55ee6a8fd2d6b, type: 3}
+  - {fileID: 21300000, guid: dd9097e6a94bfc646ba7fe692ff4d76f, type: 3}
+  town: {fileID: 21300000, guid: 339da559d92cd8c4e930a770439e0374, type: 3}
+  courier: {fileID: 21300000, guid: 942475fa308446c4a8ee5d9469c9e4e6, type: 3}
+  mascot: {fileID: 21300000, guid: e5f4d9341c2a3d54f99d818e7ad7e2be, type: 3}
+  font: {fileID: 11400000, guid: 142fe9558c7303b49a3b002ad360960c, type: 2}
