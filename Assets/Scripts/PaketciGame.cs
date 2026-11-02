@@ -9,7 +9,8 @@ public sealed class PaketciGame : MonoBehaviour
     private const float DesignWidth = 390f;
     private const float DesignHeight = 780f;
     private const float RushDuration = 75f;
-    private const float DailyDuration = 120f;
+    private const int DailyContractCount = 3;
+    private const float DailyReviveSeconds = 30f;
 
     private enum GameMode
     {
@@ -66,17 +67,21 @@ public sealed class PaketciGame : MonoBehaviour
     private bool soundEnabled = true;
     private bool hapticsEnabled = true;
     private bool hintUsed;
-    private bool dailyRewardGranted;
+    private bool reviveUsed;
+    private bool waitingForRewardedAd;
     private GameMode selectedMode;
     private float masterVolume = 0.65f;
     private int level = 1;
     private int selectedLevel = 1;
+    private int selectedDailyContract;
+    private int dailyCompletedMask;
     private int levelPage;
     private int unlockedLevel = 1;
     private int coins;
     private int totalStars;
     private int mistakes;
     private int starsAwarded;
+    private int dailyCoinsAwarded;
     private int deliveryStreak;
     private int lastDeliveryReward;
     private int modeBestScore;
@@ -87,6 +92,7 @@ public sealed class PaketciGame : MonoBehaviour
     private float deliveryCelebrationUntil;
     private float wrongAnswerUntil;
     private string message = "Üç paketi tepsiye koyup bir siparişi tamamla.";
+    private string rewardedAdStatus = "İstersen video izleyip bu rotaya bir kez devam edebilirsin.";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
@@ -243,17 +249,19 @@ public sealed class PaketciGame : MonoBehaviour
 
         DrawText(new Rect(25f, 286f, 340f, 26f), "BUGÜN NASIL OYNAYACAKSIN?", 13, TextAnchor.MiddleLeft, 5, true);
         DrawModeCard(new Rect(25f, 316f, 108f, 100f), "MAHALLE", "Sakin ve sınırsız", GameMode.Story);
-        DrawModeCard(new Rect(141f, 316f, 108f, 100f), "EKSPRES", "75 saniyelik yarış", GameMode.Rush);
-        DrawModeCard(new Rect(257f, 316f, 108f, 100f), "GÜNLÜK", "Herkese aynı rota", GameMode.Daily);
+        DrawModeCard(new Rect(141f, 316f, 108f, 100f), "EKSPRES", "75 saniye • rekor", GameMode.Rush);
+        DrawModeCard(new Rect(257f, 316f, 108f, 100f), "GÜNLÜK", "3 özel rota", GameMode.Daily);
 
-        DrawStatCard(new Rect(25f, 431f, 104f, 65f), "BÖLÜM", selectedLevel.ToString("00"), PackageColors[0]);
-        DrawStatCard(new Rect(143f, 431f, 104f, 65f), "JETON", coins.ToString(), PackageColors[1]);
-        DrawStatCard(new Rect(261f, 431f, 104f, 65f), "YILDIZ", totalStars.ToString(), PackageColors[4]);
+        DrawDailyContracts();
 
-        DrawPanel(new Rect(25f, 507f, 340f, 42f), new Color(0.20f, 0.26f, 0.36f), new Color(0.30f, 0.38f, 0.48f));
-        DrawText(new Rect(36f, 512f, 318f, 32f), SelectedModeSummary(), 12, TextAnchor.MiddleCenter, 2, false);
+        DrawStatCard(new Rect(25f, 492f, 104f, 61f), "BÖLÜM", selectedLevel.ToString("00"), PackageColors[0]);
+        DrawStatCard(new Rect(143f, 492f, 104f, 61f), "JETON", coins.ToString(), PackageColors[1]);
+        DrawStatCard(new Rect(261f, 492f, 104f, 61f), "YILDIZ", totalStars.ToString(), PackageColors[4]);
 
-        if (GUI.Button(new Rect(25f, 563f, 340f, 66f), "TESLİMATA BAŞLA    ›", primaryButtonStyle))
+        DrawPanel(new Rect(25f, 563f, 340f, 38f), new Color(0.20f, 0.26f, 0.36f), new Color(0.30f, 0.38f, 0.48f));
+        DrawText(new Rect(36f, 566f, 318f, 30f), SelectedModeSummary(), 11, TextAnchor.MiddleCenter, 2, false);
+
+        if (GUI.Button(new Rect(25f, 611f, 340f, 60f), "TESLİMATA BAŞLA    ›", primaryButtonStyle))
         {
             level = selectedMode == GameMode.Story ? selectedLevel : 1;
             StartLevel();
@@ -264,8 +272,8 @@ public sealed class PaketciGame : MonoBehaviour
             PlaySound(tapClip);
         }
 
-        DrawPanel(new Rect(25f, 640f, 340f, 55f), new Color(0.20f, 0.26f, 0.36f), new Color(0.30f, 0.38f, 0.48f));
-        DrawText(new Rect(35f, 645f, 320f, 45f), "Her bölümde yeni bir sipariş bulmacası.\nYıldızlar ilerlemeni kaydeder.", 13, TextAnchor.MiddleCenter, 2, false);
+        DrawPanel(new Rect(25f, 680f, 340f, 45f), new Color(0.20f, 0.26f, 0.36f), new Color(0.30f, 0.38f, 0.48f));
+        DrawText(new Rect(35f, 683f, 320f, 38f), "İstediğin zaman oyna; ilerlemen cihazında kalır.", 12, TextAnchor.MiddleCenter, 2, false);
 
     }
 
@@ -289,6 +297,35 @@ public sealed class PaketciGame : MonoBehaviour
         DrawText(new Rect(rect.x + 3f, rect.y + 68f, rect.width - 6f, 27f), subtitle, 9, TextAnchor.MiddleCenter, selected ? 1 : 6, false);
     }
 
+    private void DrawDailyContracts()
+    {
+        DrawText(new Rect(25f, 422f, 340f, 20f), "GÜNLÜK TESLİMATLAR  •  " + DailyCompletedCount() + " / " + DailyContractCount, 11,
+            TextAnchor.MiddleLeft, 5, true);
+
+        for (int i = 0; i < DailyContractCount; i++)
+        {
+            Rect rect = new Rect(25f + i * 116f, 444f, 108f, 39f);
+            bool selected = selectedMode == GameMode.Daily && selectedDailyContract == i;
+            bool completed = IsDailyContractComplete(i);
+            Color fill = selected ? new Color(0.98f, 0.95f, 0.86f) : completed
+                ? new Color(0.22f, 0.43f, 0.34f)
+                : new Color(0.20f, 0.26f, 0.36f);
+            DrawPanel(rect, fill, selected ? PackageColors[1] : new Color(0.30f, 0.38f, 0.48f));
+            if (GUI.Button(rect, GUIContent.none, transparentButtonStyle))
+            {
+                selectedMode = GameMode.Daily;
+                selectedDailyContract = i;
+                PlaySound(tapClip);
+            }
+
+            string label = completed ? "✓ ROTA " + (i + 1) : "ROTA " + (i + 1);
+            DrawText(new Rect(rect.x + 3f, rect.y + 2f, rect.width - 6f, 18f), label, 10,
+                TextAnchor.MiddleCenter, selected ? 0 : 2, true);
+            DrawText(new Rect(rect.x + 3f, rect.y + 19f, rect.width - 6f, 17f), DailyContractDuration(i) + " sn • " + DailyContractDecoys(i) + " tuzak", 8,
+                TextAnchor.MiddleCenter, selected ? 1 : 6, false);
+        }
+    }
+
     private string SelectedModeSummary()
     {
         if (selectedMode == GameMode.Rush)
@@ -297,7 +334,7 @@ public sealed class PaketciGame : MonoBehaviour
         }
         if (selectedMode == GameMode.Daily)
         {
-            return dailyRewardGranted ? "Bugünün ödülü alındı • Yarın yeni rota" : "Her gün değişen bulmaca • İlk tamamlamaya ödül";
+            return DailyCompletedCount() + "/3 tamamlandı • Bu rota " + (IsDailyContractComplete(selectedDailyContract) ? "ödül alındı" : "ödül: 10+" + selectedDailyContract * 5 + " jeton");
         }
         return "Hikâye modu • " + DistrictName(selectedLevel) + " • Joker paket bölüm 3'te açılır";
     }
@@ -340,7 +377,110 @@ public sealed class PaketciGame : MonoBehaviour
 
     private void RefreshDailyRewardState()
     {
-        dailyRewardGranted = PlayerPrefs.GetString("Paketci.DailyRewardDate", string.Empty) == CurrentDateKey();
+        string today = CurrentDateKey();
+        string savedDate = PlayerPrefs.GetString("Paketci.DailyDate", string.Empty);
+        if (savedDate != today)
+        {
+            dailyCompletedMask = 0;
+            PlayerPrefs.SetString("Paketci.DailyDate", today);
+            PlayerPrefs.SetInt("Paketci.DailyCompletedMask", 0);
+            PlayerPrefs.Save();
+        }
+        else
+        {
+            dailyCompletedMask = PlayerPrefs.GetInt("Paketci.DailyCompletedMask", 0) & 0x7;
+        }
+    }
+
+    private int DailyCompletedCount()
+    {
+        int count = 0;
+        for (int i = 0; i < DailyContractCount; i++)
+        {
+            if (IsDailyContractComplete(i))
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private bool IsDailyContractComplete(int contract)
+    {
+        return (dailyCompletedMask & (1 << contract)) != 0;
+    }
+
+    private static int DailyContractDuration(int contract)
+    {
+        return contract == 0 ? 90 : contract == 1 ? 75 : 60;
+    }
+
+    private static int DailyContractDecoys(int contract)
+    {
+        return contract;
+    }
+
+    private float CurrentModeDuration()
+    {
+        return selectedMode == GameMode.Rush ? RushDuration : DailyContractDuration(selectedDailyContract);
+    }
+
+    private static int DailySeed(int contract)
+    {
+        DateTime date = DateTime.UtcNow;
+        int day = date.Year * 10000 + date.Month * 100 + date.Day;
+        return day * 31 + contract * 7919;
+    }
+
+    private static string DailyContractName(int contract)
+    {
+        return contract == 0 ? "SABAH ROTASI" : contract == 1 ? "PAZAR KOŞUSU" : "AKŞAM YOĞUNLUĞU";
+    }
+
+    private void RequestReviveAd()
+    {
+        RewardedAdService adService = RewardedAdService.Instance;
+        if (adService == null || !adService.IsReady)
+        {
+            rewardedAdStatus = "Reklam henüz hazır değil; ücretsiz yeniden deneyebilirsin.";
+            return;
+        }
+
+        rewardedAdStatus = "Reklam açılıyor...";
+        waitingForRewardedAd = adService.Show(GrantRevive, HandleRewardedAdUnavailable, HandleRewardedAdClosedWithoutReward);
+        if (!waitingForRewardedAd)
+        {
+            rewardedAdStatus = "Reklam şu an açılamadı; ücretsiz yeniden deneyebilirsin.";
+        }
+    }
+
+    private void GrantRevive()
+    {
+        if (!runFailed || reviveUsed)
+        {
+            return;
+        }
+
+        reviveUsed = true;
+        waitingForRewardedAd = false;
+        runFailed = false;
+        remainingTime = DailyReviveSeconds;
+        message = "30 saniye ek süre kazandın. Devam et!";
+        rewardedAdStatus = "Reklam tamamlandı; 30 saniye eklendi.";
+        PlaySound(successClip);
+        Vibrate();
+    }
+
+    private void HandleRewardedAdUnavailable()
+    {
+        waitingForRewardedAd = false;
+        rewardedAdStatus = "Reklam şu an hazır değil; ücretsiz yeniden deneyebilirsin.";
+    }
+
+    private void HandleRewardedAdClosedWithoutReward()
+    {
+        waitingForRewardedAd = false;
+        rewardedAdStatus = "Ek süre için videoyu tamamlaman gerekiyor.";
     }
 
     private void ReturnToMenu()
@@ -389,7 +529,7 @@ public sealed class PaketciGame : MonoBehaviour
             : Mathf.CeilToInt(remainingTime) + " sn", 12, TextAnchor.MiddleRight, 1, true);
         if (selectedMode != GameMode.Story)
         {
-            float duration = selectedMode == GameMode.Rush ? RushDuration : DailyDuration;
+            float duration = CurrentModeDuration();
             float progress = Mathf.Clamp01(remainingTime / duration);
             DrawRect(new Rect(18f, 111f, 354f, 4f), new Color(1f, 1f, 1f, 0.14f));
             DrawRect(new Rect(18f, 111f, 354f * progress, 4f), progress < 0.25f ? PackageColors[0] : PackageColors[3]);
@@ -516,8 +656,8 @@ public sealed class PaketciGame : MonoBehaviour
             ? DistrictName(level) + "  •  " + mistakes + " hata"
             : selectedMode == GameMode.Rush ? "En iyi teslimat: " + modeBestScore : "Bugünkü özel rota tamamlandı", 14, TextAnchor.MiddleCenter, 1, true);
         DrawText(new Rect(47f, 405f, 296f, 42f), StarsText(starsAwarded), 34, TextAnchor.MiddleCenter, 5, true);
-        DrawText(new Rect(42f, 450f, 306f, 28f), dailyRewardGranted && selectedMode == GameMode.Daily
-            ? "Günlük ödülün alındı  •  " + totalStars + " yıldız"
+        DrawText(new Rect(42f, 450f, 306f, 28f), selectedMode == GameMode.Daily
+            ? dailyCoinsAwarded > 0 ? "+" + dailyCoinsAwarded + " jeton günlük rota ödülü • " + totalStars + " yıldız" : "Bu rotanın ödülü daha önce alındı."
             : "+" + (starsAwarded * 2) + " jeton bonusu  •  " + totalStars + " yıldız toplam", 13, TextAnchor.MiddleCenter, 0, false);
 
         bool continueToNextLevel = false;
@@ -618,7 +758,18 @@ public sealed class PaketciGame : MonoBehaviour
             PlaySound(tapClip);
         }
 
-        DrawText(new Rect(48f, 460f, 288f, 35f), "İlerlemen otomatik kaydedilir.", 13, TextAnchor.MiddleCenter, 1, false);
+        RewardedAdService adService = RewardedAdService.Instance;
+        if (adService != null && adService.PrivacyOptionsRequired)
+        {
+            if (GUI.Button(new Rect(49f, 458f, 290f, 36f), "GİZLİLİK SEÇENEKLERİ", secondaryButtonStyle))
+            {
+                adService.ShowPrivacyOptions(() => { });
+            }
+        }
+        else
+        {
+            DrawText(new Rect(48f, 460f, 288f, 35f), "İlerlemen otomatik kaydedilir.", 13, TextAnchor.MiddleCenter, 1, false);
+        }
         string closeLabel = inGame ? "MOLAYA DÖN" : "MENÜYE DÖN";
         if (GUI.Button(new Rect(49f, 505f, 290f, 43f), closeLabel, primaryButtonStyle))
         {
@@ -692,19 +843,36 @@ public sealed class PaketciGame : MonoBehaviour
     private void DrawFailureOverlay()
     {
         DrawRect(new Rect(0f, 0f, DesignWidth, DesignHeight), new Color(0.04f, 0.06f, 0.10f, 0.84f));
-        DrawPanel(new Rect(25f, 262f, 340f, 258f), new Color(0.98f, 0.95f, 0.86f), new Color(0.91f, 0.68f, 0.33f));
+        DrawPanel(new Rect(25f, 239f, 340f, 318f), new Color(0.98f, 0.95f, 0.86f), new Color(0.91f, 0.68f, 0.33f));
         DrawText(new Rect(43f, 285f, 304f, 48f), selectedMode == GameMode.Daily ? "SÜRE DOLDU" : "ROTA SONA ERDİ", 25, TextAnchor.MiddleCenter, 4, true);
         int delivered = selectedMode == GameMode.Rush ? rushScore : orders.FindAll(order => order.completed).Count;
-        DrawText(new Rect(43f, 337f, 304f, 49f), "Bu kez " + delivered + " sipariş teslim ettin.\nBir tur daha denemek ister misin?", 16,
+        DrawText(new Rect(43f, 333f, 304f, 47f), "Bu tur " + delivered + " sipariş teslim ettin.", 16,
             TextAnchor.MiddleCenter, 0, false);
-        DrawText(new Rect(43f, 391f, 304f, 29f), "EN İYİ: " + modeBestScore + " SİPARİŞ", 13, TextAnchor.MiddleCenter, 1, true);
+        DrawText(new Rect(43f, 379f, 304f, 27f), selectedMode == GameMode.Rush
+            ? "REKOR: " + modeBestScore + " TESLİMAT"
+            : DailyContractName(selectedDailyContract) + " • " + DailyCompletedCount() + "/3 tamamlandı",
+            12, TextAnchor.MiddleCenter, 1, true);
 
-        if (GUI.Button(new Rect(48f, 434f, 294f, 43f), "YENİDEN DENE", primaryButtonStyle))
+        RewardedAdService adService = RewardedAdService.Instance;
+        if (!reviveUsed)
+        {
+            string reviveLabel = waitingForRewardedAd
+                ? "REKLAM AÇILIYOR..."
+                : adService != null && adService.IsReady ? "VİDEO İZLE  •  +30 SANİYE" : "REKLAM HAZIRLANIYOR...";
+            DrawText(new Rect(45f, 404f, 300f, 18f), rewardedAdStatus, 10, TextAnchor.MiddleCenter, 1, false);
+            if (GUI.Button(new Rect(48f, 422f, 294f, 44f), reviveLabel, hintButtonStyle) && !waitingForRewardedAd)
+            {
+                RequestReviveAd();
+            }
+        }
+
+        float retryY = reviveUsed ? 424f : 473f;
+        if (GUI.Button(new Rect(48f, retryY, 294f, 43f), "YENİDEN DENE", primaryButtonStyle))
         {
             StartLevel();
             PlaySound(tapClip);
         }
-        if (GUI.Button(new Rect(48f, 483f, 294f, 34f), "ANA MENÜYE DÖN", secondaryButtonStyle))
+        if (GUI.Button(new Rect(48f, retryY + 48f, 294f, 35f), "ANA MENÜYE DÖN", secondaryButtonStyle))
         {
             ReturnToMenu();
             PlaySound(tapClip);
@@ -720,10 +888,13 @@ public sealed class PaketciGame : MonoBehaviour
         runFailed = false;
         paused = false;
         hintUsed = false;
+        reviveUsed = false;
+        waitingForRewardedAd = false;
         highlightedPackage = -1;
         mistakes = 0;
         deliveryStreak = 0;
         lastDeliveryReward = 0;
+        dailyCoinsAwarded = 0;
         rushScore = 0;
         starsAwarded = 0;
         message = "Üç paketi tepsiye koyup bir siparişi tamamla.";
@@ -737,29 +908,29 @@ public sealed class PaketciGame : MonoBehaviour
         }
         else if (selectedMode == GameMode.Daily)
         {
-            DateTime utcDate = DateTime.UtcNow;
-            seed = utcDate.Year * 10000 + utcDate.Month * 100 + utcDate.Day;
-            remainingTime = DailyDuration;
+            seed = DailySeed(selectedDailyContract);
+            remainingTime = DailyContractDuration(selectedDailyContract);
         }
         else
         {
             remainingTime = 0f;
         }
 
-        int colorCount = selectedMode == GameMode.Daily ? 4 : ColorCountForLevel(level);
-        BuildOrderWave(seed, colorCount, selectedMode != GameMode.Daily && level >= 3);
+        int colorCount = selectedMode == GameMode.Daily ? 3 + selectedDailyContract : ColorCountForLevel(level);
+        int decoys = selectedMode == GameMode.Daily ? DailyContractDecoys(selectedDailyContract) : level >= 7 ? 2 : level >= 3 ? 1 : 0;
+        BuildOrderWave(seed, colorCount, selectedMode != GameMode.Daily && level >= 3, decoys);
     }
 
     private void StartRushWave()
     {
         int difficultyLevel = 1 + rushScore / 3;
         int seed = Environment.TickCount ^ (rushScore * 7919);
-        BuildOrderWave(seed, ColorCountForLevel(difficultyLevel), difficultyLevel >= 3);
+        BuildOrderWave(seed, ColorCountForLevel(difficultyLevel), difficultyLevel >= 3, Mathf.Min(2, 1 + rushScore / 5));
         hintUsed = false;
         message = "Yeni rota! Siparişleri seri teslim et.";
     }
 
-    private void BuildOrderWave(int seed, int colorCount, bool addJoker)
+    private void BuildOrderWave(int seed, int colorCount, bool addJoker, int decoyCount)
     {
         packages.Clear();
         orders.Clear();
@@ -787,6 +958,10 @@ public sealed class PaketciGame : MonoBehaviour
         {
             supply.Add(-1);
         }
+        for (int i = 0; i < decoyCount; i++)
+        {
+            supply.Add(random.Next(colorCount));
+        }
 
         for (int i = supply.Count - 1; i > 0; i--)
         {
@@ -810,6 +985,7 @@ public sealed class PaketciGame : MonoBehaviour
         }
 
         tray.Add(packageIndex);
+        PlaySound(tapClip);
         if (tray.Count < 3)
         {
             message = "Bir paket daha seç.";
@@ -874,12 +1050,14 @@ public sealed class PaketciGame : MonoBehaviour
                     starsAwarded = mistakes == 0 ? 3 : mistakes <= 2 ? 2 : 1;
                     if (selectedMode == GameMode.Daily)
                     {
-                        if (!dailyRewardGranted)
+                        int contractBit = 1 << selectedDailyContract;
+                        if ((dailyCompletedMask & contractBit) == 0)
                         {
                             totalStars += starsAwarded;
-                            coins += 10;
-                            dailyRewardGranted = true;
-                            PlayerPrefs.SetString("Paketci.DailyRewardDate", CurrentDateKey());
+                            dailyCoinsAwarded = 10 + selectedDailyContract * 5;
+                            coins += dailyCoinsAwarded;
+                            dailyCompletedMask |= contractBit;
+                            PlayerPrefs.SetInt("Paketci.DailyCompletedMask", dailyCompletedMask);
                         }
                         else
                         {
